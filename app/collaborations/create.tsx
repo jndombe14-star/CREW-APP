@@ -3,7 +3,9 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
+import { DateField } from '@/components/DateField';
 import { Input } from '@/components/Input';
+import { LocationField, type LocationValue } from '@/components/LocationField';
 import { Screen } from '@/components/Screen';
 import { useCategories } from '@/features/onboarding/useCategories';
 import { useCreateCollaboration } from '@/features/collaborations/useCreateCollaboration';
@@ -18,6 +20,14 @@ const TYPES: { value: CollaborationType; icon: string; label: string }[] = [
   { value: 'group', icon: '👥', label: 'Groupe' },
 ];
 
+function toDateString(d: Date) {
+  return d.toISOString().slice(0, 10);
+}
+
+function toTimeString(d: Date) {
+  return d.toTimeString().slice(0, 5);
+}
+
 export default function CreateCollaboration() {
   const { colors, spacing, typography } = useTheme();
   const router = useRouter();
@@ -27,8 +37,9 @@ export default function CreateCollaboration() {
   const [categoryId, setCategoryId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [type, setType] = useState<CollaborationType>('collaboration');
-  const [date, setDate] = useState('');
-  const [location, setLocation] = useState('');
+  const [date, setDate] = useState<Date | null>(null);
+  const [time, setTime] = useState<Date | null>(null);
+  const [location, setLocation] = useState<LocationValue>({ address: '', latitude: null, longitude: null });
   const [budget, setBudget] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -46,8 +57,11 @@ export default function CreateCollaboration() {
         description: description.trim() || null,
         categoryId,
         collaborationType: type,
-        location: location.trim() || null,
-        scheduledDate: date.trim() || null,
+        location: location.address.trim() || null,
+        latitude: location.latitude,
+        longitude: location.longitude,
+        scheduledDate: date ? toDateString(date) : null,
+        scheduledTime: time ? toTimeString(time) : null,
         budgetAmount: type === 'paid' && budget ? Number(budget) : null,
       });
       router.replace(`/collaborations/${collaboration.id}`);
@@ -95,8 +109,17 @@ export default function CreateCollaboration() {
         <Input label="Budget (€)" keyboardType="numeric" value={budget} onChangeText={setBudget} />
       ) : null}
 
-      <Input label="Quand (AAAA-MM-JJ, optionnel)" value={date} onChangeText={setDate} placeholder="2026-08-20" />
-      <Input label="Où" value={location} onChangeText={setLocation} />
+      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+        <View style={{ flex: 1 }}>
+          <DateField label="Quand (optionnel)" mode="date" value={date} onChange={setDate} minimumDate={new Date()} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <DateField label="Heure (optionnel)" mode="time" value={time} onChange={setTime} />
+        </View>
+      </View>
+
+      <LocationField value={location} onChange={setLocation} />
+
       <Input label="Description" value={description} onChangeText={setDescription} multiline numberOfLines={4} />
 
       {error ? <Text style={[typography.caption, { color: colors.danger }]}>{error}</Text> : null}

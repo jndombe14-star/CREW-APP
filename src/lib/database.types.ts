@@ -99,6 +99,8 @@ export type Booking = {
   requested_date: string;
   requested_time: string | null;
   location: string | null;
+  latitude: number | null;
+  longitude: number | null;
   message: string | null;
   status: BookingStatus;
   created_at: string;
@@ -140,7 +142,10 @@ export type Collaboration = {
   description: string | null;
   collaboration_type: CollaborationType;
   location: string | null;
+  latitude: number | null;
+  longitude: number | null;
   scheduled_date: string | null;
+  scheduled_time: string | null;
   budget_amount: number | null;
   status: CollaborationStatus;
   created_at: string;

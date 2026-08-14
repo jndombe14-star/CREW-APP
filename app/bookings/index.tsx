@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, Text, View } from 'react-native';
 import { Avatar } from '@/components/Avatar';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
@@ -11,6 +11,7 @@ import { StarPicker } from '@/components/StarPicker';
 import { useBookingsAsClient, useBookingsAsProfessional, useUpdateBookingStatus } from '@/features/bookings/useBookings';
 import { useOwnProProfile } from '@/features/home/useOwnProProfile';
 import { useCreateReview, useMyReviewedBookingIds } from '@/features/reviews/useReviews';
+import { mapsUrl } from '@/lib/location';
 import { useAuthStore } from '@/store/authStore';
 import { useTheme } from '@/theme/useTheme';
 import type { BookingStatus } from '@/lib/database.types';
@@ -110,7 +111,15 @@ export default function BookingsScreen() {
                   📅 {booking.requested_date} {booking.requested_time ?? ''}
                 </Text>
                 {booking.location ? (
-                  <Text style={[typography.caption, { color: colors.textMuted }]}>📍 {booking.location}</Text>
+                  booking.latitude != null && booking.longitude != null ? (
+                    <Pressable onPress={() => Linking.openURL(mapsUrl(booking.latitude!, booking.longitude!, booking.location!))}>
+                      <Text style={[typography.caption, { color: colors.primary }]}>
+                        📍 {booking.location} · ouvrir dans Plans
+                      </Text>
+                    </Pressable>
+                  ) : (
+                    <Text style={[typography.caption, { color: colors.textMuted }]}>📍 {booking.location}</Text>
+                  )
                 ) : null}
                 {booking.message ? (
                   <Text style={[typography.caption, { color: colors.textMuted }]}>"{booking.message}"</Text>

@@ -9,7 +9,10 @@ type CreateCollaborationInput = {
   categoryId: string | null;
   collaborationType: CollaborationType;
   location: string | null;
+  latitude: number | null;
+  longitude: number | null;
   scheduledDate: string | null;
+  scheduledTime: string | null;
   budgetAmount: number | null;
 };
 
@@ -30,7 +33,10 @@ export function useCreateCollaboration() {
           category_id: input.categoryId,
           collaboration_type: input.collaborationType,
           location: input.location,
+          latitude: input.latitude,
+          longitude: input.longitude,
           scheduled_date: input.scheduledDate,
+          scheduled_time: input.scheduledTime,
           budget_amount: input.budgetAmount,
         })
         .select()

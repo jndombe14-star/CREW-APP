@@ -5,8 +5,10 @@ import { Avatar } from '@/components/Avatar';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { DateField } from '@/components/DateField';
 import { FavoriteButton } from '@/components/FavoriteButton';
 import { Input } from '@/components/Input';
+import { LocationField, type LocationValue } from '@/components/LocationField';
 import { PortfolioThumbnail } from '@/components/PortfolioThumbnail';
 import { ReportBlockActions } from '@/components/ReportBlockActions';
 import { Screen } from '@/components/Screen';
@@ -19,9 +21,15 @@ import { useProfileRating, useReviewsForProfile } from '@/features/reviews/useRe
 import { useAuthStore } from '@/store/authStore';
 import { useTheme } from '@/theme/useTheme';
 
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const TIME_RE = /^\d{2}:\d{2}$/;
 const DAY_LABELS = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+
+function toDateString(d: Date) {
+  return d.toISOString().slice(0, 10);
+}
+
+function toTimeString(d: Date) {
+  return d.toTimeString().slice(0, 5);
+}
 
 export default function ProProfileDetail() {
   const { colors, spacing, typography } = useTheme();
@@ -39,9 +47,9 @@ export default function ProProfileDetail() {
   const myId = useAuthStore((s) => s.session?.user.id);
 
   const [requestingServiceId, setRequestingServiceId] = useState<string | null>(null);
-  const [date, setDate] = useState('');
-  const [time, setTime] = useState('');
-  const [location, setLocation] = useState('');
+  const [date, setDate] = useState<Date | null>(null);
+  const [time, setTime] = useState<Date | null>(null);
+  const [location, setLocation] = useState<LocationValue>({ address: '', latitude: null, longitude: null });
   const [message, setMessage] = useState('');
   const [bookingSuccess, setBookingSuccess] = useState(false);
 
@@ -59,12 +67,8 @@ export default function ProProfileDetail() {
   const onSubmitBooking = async () => {
     if (!proProfile || !requestingServiceId) return;
     setError(null);
-    if (!DATE_RE.test(date)) {
-      setError('Format de date attendu : AAAA-MM-JJ (ex: 2026-08-20).');
-      return;
-    }
-    if (time && !TIME_RE.test(time)) {
-      setError('Format d\'heure attendu : HH:MM (ex: 18:00).');
+    if (!date) {
+      setError('Choisis une date.');
       return;
     }
 
@@ -72,16 +76,18 @@ export default function ProProfileDetail() {
       await createBooking.mutateAsync({
         serviceId: requestingServiceId,
         professionalProfileId: proProfile.id,
-        requestedDate: date,
-        requestedTime: time || null,
-        location: location.trim() || null,
+        requestedDate: toDateString(date),
+        requestedTime: time ? toTimeString(time) : null,
+        location: location.address.trim() || null,
+        latitude: location.latitude,
+        longitude: location.longitude,
         message: message.trim() || null,
       });
       setBookingSuccess(true);
       setRequestingServiceId(null);
-      setDate('');
-      setTime('');
-      setLocation('');
+      setDate(null);
+      setTime(null);
+      setLocation({ address: '', latitude: null, longitude: null });
       setMessage('');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Impossible d\'envoyer la demande.');
@@ -178,13 +184,19 @@ export default function ProProfileDetail() {
 
               {requestingServiceId === service.id ? (
                 <View style={{ gap: spacing.sm }}>
-                  <Input label="Date (AAAA-MM-JJ)" value={date} onChangeText={setDate} placeholder="2026-08-20" />
+                  <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                    <View style={{ flex: 1 }}>
+                      <DateField label="Date" mode="date" value={date} onChange={setDate} minimumDate={new Date()} />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <DateField label="Heure (optionnel)" mode="time" value={time} onChange={setTime} />
+                    </View>
+                  </View>
                   {(() => {
-                    if (!DATE_RE.test(date)) return null;
-                    const parsed = new Date(`${date}T00:00:00`);
-                    const isBlocked = availabilityBlocks?.some((b) => b.blocked_date === date);
+                    if (!date) return null;
+                    const isBlocked = availabilityBlocks?.some((b) => b.blocked_date === toDateString(date));
                     const hasWeeklySchedule = (weeklyAvailability?.length ?? 0) > 0;
-                    const isAvailableDay = weeklyAvailability?.some((w) => w.day_of_week === parsed.getDay());
+                    const isAvailableDay = weeklyAvailability?.some((w) => w.day_of_week === date.getDay());
                     if (isBlocked) {
                       return (
                         <Text style={[typography.caption, { color: colors.danger }]}>
@@ -201,8 +213,7 @@ export default function ProProfileDetail() {
                     }
                     return null;
                   })()}
-                  <Input label="Heure (HH:MM, optionnel)" value={time} onChangeText={setTime} placeholder="18:00" />
-                  <Input label="Lieu" value={location} onChangeText={setLocation} />
+                  <LocationField value={location} onChange={setLocation} />
                   <Input label="Message (optionnel)" value={message} onChangeText={setMessage} multiline />
                   <Button label="Envoyer la demande" onPress={onSubmitBooking} loading={createBooking.isPending} />
                 </View>

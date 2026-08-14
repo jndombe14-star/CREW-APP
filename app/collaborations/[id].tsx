@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, Linking, Pressable, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Avatar } from '@/components/Avatar';
 import { Badge } from '@/components/Badge';
@@ -17,6 +17,7 @@ import {
 import { useCollaborationDetail } from '@/features/collaborations/useCollaborations';
 import { useStartConversation } from '@/features/messaging/useStartConversation';
 import { useCreateCollaborationReview, useMyReviewedCollaborationIds } from '@/features/reviews/useReviews';
+import { mapsUrl } from '@/lib/location';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { useTheme } from '@/theme/useTheme';
@@ -139,10 +140,25 @@ export default function CollaborationDetail() {
           <Text style={[typography.body, { color: colors.textMuted }]}>{collaboration.description}</Text>
         ) : null}
         {collaboration.location ? (
-          <Text style={[typography.caption, { color: colors.textMuted }]}>📍 {collaboration.location}</Text>
+          collaboration.latitude != null && collaboration.longitude != null ? (
+            <Pressable
+              onPress={() =>
+                Linking.openURL(mapsUrl(collaboration.latitude!, collaboration.longitude!, collaboration.location!))
+              }
+            >
+              <Text style={[typography.caption, { color: colors.primary }]}>
+                📍 {collaboration.location} · ouvrir dans Plans
+              </Text>
+            </Pressable>
+          ) : (
+            <Text style={[typography.caption, { color: colors.textMuted }]}>📍 {collaboration.location}</Text>
+          )
         ) : null}
         {collaboration.scheduled_date ? (
-          <Text style={[typography.caption, { color: colors.textMuted }]}>📅 {collaboration.scheduled_date}</Text>
+          <Text style={[typography.caption, { color: colors.textMuted }]}>
+            📅 {collaboration.scheduled_date}
+            {collaboration.scheduled_time ? ` à ${collaboration.scheduled_time.slice(0, 5)}` : ''}
+          </Text>
         ) : null}
         {collaboration.budget_amount ? (
           <Text style={[typography.caption, { color: colors.textMuted }]}>💰 {collaboration.budget_amount}€</Text>

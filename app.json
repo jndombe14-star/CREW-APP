@@ -50,7 +50,8 @@
           "color": "#FF5A36"
         }
       ],
-      "expo-video"
+      "expo-video",
+      "@react-native-community/datetimepicker"
     ]
   }
 }

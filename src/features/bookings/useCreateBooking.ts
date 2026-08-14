@@ -8,6 +8,8 @@ type CreateBookingInput = {
   requestedDate: string; // YYYY-MM-DD
   requestedTime: string | null; // HH:MM
   location: string | null;
+  latitude: number | null;
+  longitude: number | null;
   message: string | null;
 };
 
@@ -28,6 +30,8 @@ export function useCreateBooking() {
           requested_date: input.requestedDate,
           requested_time: input.requestedTime,
           location: input.location,
+          latitude: input.latitude,
+          longitude: input.longitude,
           message: input.message,
         })
         .select()
