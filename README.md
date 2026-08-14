@@ -67,9 +67,11 @@ reviews. See "What's not built yet" below for what's intentionally left out and 
 - **Portfolio & avatar photos/videos**: real photo *and video* upload to Supabase Storage
   (`expo-video` playback, muted looping thumbnails) — change your avatar or add portfolio media
   to a PRO profile, shown on the public profile page.
-- **Visual map**: `react-native-maps` (works in Expo Go, no extra setup for dev) showing real
-  PRO (blue) and COLLAB (pink) pins from the same PostGIS proximity search, tap a pin to open
-  the profile. Production app-store builds need a Google Maps API key (not required for dev).
+- **"Autour de toi" (Map tab)**: real PostGIS proximity data (same `nearby_professionals`/
+  `nearby_creators` RPCs as Explorer), sorted by distance — a pin-based `react-native-maps` view
+  was tried first but didn't render reliably in standard Expo Go, so this ships as a real,
+  working distance-sorted list instead of a map that might be blank for some users. A native
+  pin map is a reasonable follow-up once tested in an EAS dev client.
 - **Category filters & relevance sort**: Explorer can be filtered by profession/interest
   category (PRO and COLLAB, including in "Près de moi" mode), and PRO results can be sorted by
   "Pertinence" — a real weighted score (rating, review volume, service completeness, distance
@@ -101,6 +103,7 @@ Deliberate omissions — per the product spec's own rule against faking function
 |---|---|---|
 | Payments / Stripe Connect | Not started | Stripe account + secret key |
 | Social OAuth (Instagram/TikTok/FB/X/YouTube) | Not started | Developer app registration on each platform |
+| Pin-based visual map | Replaced with a working list (see above) | `eas init` + a dev client build to properly test `react-native-maps` rendering |
 | Actually receiving push notifications | Backend verified, device delivery pending | `eas init` with your own Expo account (see Notifications above) |
 | Full matching engine with search intent | Partial (real relevance sort, no skills/budget parsing) | A "what/when/where" search parser (spec §18/§19) to capture real intent to score against |
 | Push notifications | Not started | Expo push tokens + a delivery trigger |
