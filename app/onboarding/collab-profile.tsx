@@ -45,10 +45,10 @@ export default function CollabProfileOnboarding() {
       return;
     }
 
-    router.replace('/home');
+    router.replace('/map');
   };
 
-  const onSkip = () => router.replace('/home');
+  const onSkip = () => router.replace('/map');
 
   return (
     <Screen scroll>

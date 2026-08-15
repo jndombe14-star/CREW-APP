@@ -37,7 +37,7 @@ export default function ProProfileOnboarding() {
 
   const goNext = () => {
     if (next === 'collab') router.replace('/onboarding/collab-profile');
-    else router.replace('/home');
+    else router.replace('/map');
   };
 
   const onSkip = () => goNext();

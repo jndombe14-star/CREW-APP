@@ -44,7 +44,7 @@ function AppNavigator() {
   }
 
   if (session && (profile?.is_pro_mode || profile?.is_collab_mode) && (inAuthGroup || inOnboardingGroup)) {
-    return <Redirect href="/home" />;
+    return <Redirect href="/map" />;
   }
 
   // A single root Stack so every screen shares one navigation history — screens reached
