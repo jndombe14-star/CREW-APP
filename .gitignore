@@ -18,6 +18,11 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 
+# Firebase service account key (used once to upload to `eas credentials`, never
+# committed) — google-services.json itself is safe/expected to be committed.
+*firebase-adminsdk*.json
+*service-account*.json
+
 # Metro
 .metro-health-check*
 
