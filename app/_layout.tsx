@@ -43,7 +43,11 @@ function AppNavigator() {
     return <Redirect href="/onboarding" />;
   }
 
-  if (session && (profile?.is_pro_mode || profile?.is_collab_mode) && (inAuthGroup || inOnboardingGroup)) {
+  // Only bounce away from the (auth) screens here — NOT from onboarding. Mode selection
+  // (step 1) sets is_pro_mode/is_collab_mode immediately, before the profile-detail steps
+  // (pro-profile/collab-profile) run; redirecting on that flag would skip those steps
+  // entirely. Onboarding's own screens call router.replace('/map') when they're truly done.
+  if (session && (profile?.is_pro_mode || profile?.is_collab_mode) && inAuthGroup) {
     return <Redirect href="/map" />;
   }
 
