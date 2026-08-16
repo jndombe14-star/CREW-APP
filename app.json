@@ -8,12 +8,14 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "com.jndombe14star.crew",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "CREW utilise ta position pour te montrer les professionnels et collaborations à proximité."
       },
       "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
+      "package": "com.jndombe14star.crew",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
