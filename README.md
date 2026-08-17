@@ -67,11 +67,16 @@ reviews. See "What's not built yet" below for what's intentionally left out and 
 - **Portfolio & avatar photos/videos**: real photo *and video* upload to Supabase Storage
   (`expo-video` playback, muted looping thumbnails) — change your avatar or add portfolio media
   to a PRO profile, shown on the public profile page.
-- **"Autour de toi" (Map tab)**: real PostGIS proximity data (same `nearby_professionals`/
-  `nearby_creators` RPCs as Explorer), sorted by distance — a pin-based `react-native-maps` view
-  was tried first but didn't render reliably in standard Expo Go, so this ships as a real,
-  working distance-sorted list instead of a map that might be blank for some users. A native
-  pin map is a reasonable follow-up once tested in an EAS dev client.
+- **"Autour de toi" (Map tab)**: a real visual map (TomTom Maps SDK for Web — `react-native-maps`
+  was tried first but didn't render reliably in standard Expo Go) rendered via `react-native-webview`
+  on native and a plain iframe on web, so it's one implementation on both platforms. Shows a live
+  "you are here" pin (updates via `watchPositionAsync` while the screen is open) plus pins for
+  nearby PRO/COLLAB profiles from the same PostGIS `nearby_professionals`/`nearby_creators` RPCs
+  as Explorer, refreshed on a 20s interval — polling, not push-based realtime. A "Mettre à jour ma
+  position" button writes the device's current position to `profiles.location` so the user becomes
+  discoverable at an accurate spot. The distance-sorted list still ships below the map. Requires
+  `EXPO_PUBLIC_TOMTOM_API_KEY` (free tier at developer.tomtom.com) — without it the map shows an
+  honest "unavailable" message instead of a blank/broken view.
 - **Category filters & relevance sort**: Explorer can be filtered by profession/interest
   category (PRO and COLLAB, including in "Près de moi" mode), and PRO results can be sorted by
   "Pertinence" — a real weighted score (rating, review volume, service completeness, distance
@@ -103,7 +108,6 @@ Deliberate omissions — per the product spec's own rule against faking function
 |---|---|---|
 | Payments / Stripe Connect | Not started | Stripe account + secret key |
 | Social OAuth (Instagram/TikTok/FB/X/YouTube) | Not started | Developer app registration on each platform |
-| Pin-based visual map | Replaced with a working list (see above) | `eas init` + a dev client build to properly test `react-native-maps` rendering |
 | Actually receiving push notifications | Backend verified, device delivery pending | `eas init` with your own Expo account (see Notifications above) |
 | Full matching engine with search intent | Partial (real relevance sort, no skills/budget parsing) | A "what/when/where" search parser (spec §18/§19) to capture real intent to score against |
 | Push notifications | Not started | Expo push tokens + a delivery trigger |

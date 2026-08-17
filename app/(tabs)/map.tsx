@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
+import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { Avatar } from '@/components/Avatar';
 import { Badge } from '@/components/Badge';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
 import { Screen } from '@/components/Screen';
+import { TomTomMap, type MapMarker } from '@/components/TomTomMap';
 import { useNearbyCreators, useNearbyProfessionals } from '@/features/explore/useNearby';
-import { getCurrentDeviceLocation } from '@/lib/location';
+import { getCurrentDeviceLocation, toGeographyPoint } from '@/lib/location';
+import { supabase } from '@/lib/supabase';
+import { useAuthStore } from '@/store/authStore';
 import { useTheme } from '@/theme/useTheme';
 import type { CreatorProfileWithJoins, ProfessionalProfileWithJoins } from '@/lib/database.types';
 
@@ -16,19 +20,23 @@ type Segment = 'pro' | 'collab';
 type NearbyItem = (ProfessionalProfileWithJoins | CreatorProfileWithJoins) & {
   distanceKm?: number | null;
   headline?: string;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
-// A pin-based map view (react-native-maps) was tried here but doesn't render reliably
-// in standard Expo Go for this SDK — it needs a custom EAS dev client to verify properly.
-// Rather than ship a broken map, this is a real, working "near me" view using the exact
-// same PostGIS proximity data, sorted by distance instead of plotted on pins.
+// Real live map (TomTom, via WebView on native / iframe on web) plus the existing
+// distance-sorted list below it. Own position tracks live via watchPositionAsync while
+// this screen is open; nearby pins refresh on an interval so they reflect DB changes
+// without a manual reload — a plain polling refresh, not a push-based realtime claim.
 export default function Map() {
   const { colors, spacing, typography } = useTheme();
   const router = useRouter();
+  const session = useAuthStore((s) => s.session);
   const [segment, setSegment] = useState<Segment>('pro');
   const [coords, setCoords] = useState<Coords | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [sharing, setSharing] = useState(false);
 
   const nearbyProfessionals = useNearbyProfessionals(coords, 200);
   const nearbyCreators = useNearbyCreators(coords, 200);
@@ -39,6 +47,49 @@ export default function Map() {
       .catch((e) => setError(e instanceof Error ? e.message : 'Impossible de récupérer ta position.'))
       .finally(() => setLoading(false));
   }, []);
+
+  // Keep the "you are here" pin live while the screen is open.
+  useEffect(() => {
+    let subscription: Location.LocationSubscription | undefined;
+    Location.watchPositionAsync(
+      { accuracy: Location.Accuracy.Balanced, timeInterval: 8000, distanceInterval: 25 },
+      (position) => setCoords({ latitude: position.coords.latitude, longitude: position.coords.longitude })
+    )
+      .then((sub) => {
+        subscription = sub;
+      })
+      .catch(() => {
+        // Permission already handled by the initial getCurrentDeviceLocation() call above.
+      });
+    return () => subscription?.remove();
+  }, []);
+
+  // Refresh nearby pins periodically so the map reflects recent DB changes.
+  useEffect(() => {
+    const id = setInterval(() => {
+      nearbyProfessionals.refetch();
+      nearbyCreators.refetch();
+    }, 20000);
+    return () => clearInterval(id);
+  }, [nearbyProfessionals, nearbyCreators]);
+
+  async function shareMyLocation() {
+    if (!session?.user.id) return;
+    setSharing(true);
+    try {
+      const location = await getCurrentDeviceLocation();
+      setCoords({ latitude: location.latitude, longitude: location.longitude });
+      await supabase
+        .from('profiles')
+        .update({ location: toGeographyPoint(location.latitude, location.longitude) })
+        .eq('id', session.user.id);
+    } catch {
+      // Silent: the button is a best-effort "make me visible now" nudge, initial
+      // permission errors are already surfaced by the screen's main error state.
+    } finally {
+      setSharing(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -62,11 +113,34 @@ export default function Map() {
 
   const isLoading = segment === 'pro' ? nearbyProfessionals.isLoading : nearbyCreators.isLoading;
   const data: NearbyItem[] | undefined = segment === 'pro' ? nearbyProfessionals.data : nearbyCreators.data;
+  const markers: MapMarker[] = (data ?? [])
+    .filter((item) => item.latitude != null && item.longitude != null)
+    .map((item) => ({
+      id: item.profile_id,
+      latitude: item.latitude as number,
+      longitude: item.longitude as number,
+      color: segment === 'pro' ? colors.pro : colors.collab,
+      label: item.profiles?.full_name ?? '',
+    }));
 
   return (
     <Screen>
       <View style={{ gap: spacing.md, paddingBottom: spacing.md }}>
         <Text style={[typography.title, { color: colors.text }]}>Autour de toi</Text>
+
+        <TomTomMap
+          latitude={coords.latitude}
+          longitude={coords.longitude}
+          markers={markers}
+          onMarkerPress={(id) => router.push(segment === 'pro' ? `/pro/${id}` : `/collab/${id}`)}
+        />
+
+        <Pressable onPress={shareMyLocation} disabled={sharing}>
+          <Text style={[typography.caption, { color: colors.primary, textAlign: 'right' }]}>
+            {sharing ? 'Mise à jour…' : '📍 Mettre à jour ma position'}
+          </Text>
+        </Pressable>
+
         <View style={{ flexDirection: 'row', gap: spacing.sm }}>
           <Pressable onPress={() => setSegment('pro')}>
             <Badge label="💼 Professionnels" tone={segment === 'pro' ? 'pro' : 'neutral'} />
