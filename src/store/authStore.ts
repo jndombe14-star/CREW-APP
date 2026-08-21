@@ -31,6 +31,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { data, error } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
     if (error) {
       console.warn('Failed to load profile', error.message);
+      // A stale/expired persisted session can pass the client-side expiry check but still
+      // get rejected by the server (invalid JWT) — sign out so the app doesn't stay stuck
+      // holding a session it can never successfully use.
+      if (/jwt|expired|invalid/i.test(error.message)) {
+        await supabase.auth.signOut();
+        set({ session: null, profile: null });
+      }
       return;
     }
     set({ profile: data });
@@ -43,24 +50,51 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 }));
 
 let initialized = false;
+let hasAppliedInitial = false;
+let lastAccessToken: string | null = null;
+
+// Circuit breaker: a corrupted/expired persisted session can make the SDK re-emit auth
+// events in a tight burst while it retries a refresh that can never succeed. Without this,
+// each event re-sets the store and re-renders the whole app, which can spiral into a
+// "Maximum update depth exceeded" crash. If events fire faster than a real login/logout/
+// refresh ever would, treat the session as unrecoverable and force a clean sign-out.
+let recentEventTimestamps: number[] = [];
+const BURST_WINDOW_MS = 2000;
+const BURST_LIMIT = 6;
 
 export function initAuthListener() {
   if (initialized) return;
   initialized = true;
 
-  supabase.auth.getSession().then(({ data }) => {
-    useAuthStore.getState().setSession(data.session);
-    if (data.session) {
-      useAuthStore.getState().refreshProfile();
-    }
-  });
+  const applySession = (session: import('@supabase/supabase-js').Session | null) => {
+    const nextToken = session?.access_token ?? null;
+    if (hasAppliedInitial && nextToken === lastAccessToken) return;
+    hasAppliedInitial = true;
+    lastAccessToken = nextToken;
 
-  supabase.auth.onAuthStateChange((_event, session) => {
     useAuthStore.getState().setSession(session);
     if (session) {
       useAuthStore.getState().refreshProfile();
     } else {
       useAuthStore.getState().setProfile(null);
     }
+  };
+
+  supabase.auth.getSession().then(({ data }) => {
+    applySession(data.session);
+  });
+
+  supabase.auth.onAuthStateChange((_event, session) => {
+    const now = Date.now();
+    recentEventTimestamps = [...recentEventTimestamps, now].filter((t) => now - t < BURST_WINDOW_MS);
+    if (recentEventTimestamps.length > BURST_LIMIT) {
+      console.warn('Auth events firing in a tight burst — clearing session to break the loop.');
+      recentEventTimestamps = [];
+      lastAccessToken = null;
+      supabase.auth.signOut();
+      useAuthStore.setState({ session: null, profile: null, isInitializing: false });
+      return;
+    }
+    applySession(session);
   });
 }
