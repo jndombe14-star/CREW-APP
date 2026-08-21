@@ -96,6 +96,22 @@ reviews. See "What's not built yet" below for what's intentionally left out and 
   requesting a booking sees an inline warning if the chosen date falls outside those hours or
   on a blocked date (not a hard block — the request can still be sent, matching the spec's
   "surface availability" approach rather than a full slot-conflict engine).
+- **"Disponible maintenant"**: a separate, simpler on/off toggle (Home screen) from the weekly
+  schedule above — for "I'm free to shoot content right now." Shown as a green/orange dot on
+  avatars everywhere (Explorer, the map) and on profile pages, plus a yellow ring around anyone
+  with an upcoming accepted booking or matched collaboration, computed server-side in the same
+  `nearby_professionals`/`nearby_creators` RPCs.
+- **Instagram/TikTok handles**: a profile can list its handles (`profile-edit/personal`), shown
+  as tappable links on PRO/COLLAB profile pages. Plain text fields, not OAuth account linking —
+  that needs developer app registration on each platform (see below).
+- **Feed tab**: a platform-wide, newest-first feed of portfolio uploads, tapping through to the
+  poster's profile. v1 scope: only PRO portfolios exist today (`portfolio_items` is PRO-only),
+  so COLLAB work doesn't appear there yet.
+- **Auto-created profile row**: signup used to insert the `profiles` row as a separate client
+  call right after `auth.signUp()` — any interruption between the two (crash, dropped
+  connection) left a real auth user with no profile, which then failed loudly and confusingly
+  the moment any other table tried to reference it (e.g. `creator_profiles` on onboarding). A
+  `handle_new_user` trigger now creates it atomically with the auth signup itself.
 
 Row Level Security is enforced on every table: the client is never trusted for ownership,
 status transitions, or who-can-see-what — the database checks `auth.uid()` itself.

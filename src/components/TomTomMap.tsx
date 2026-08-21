@@ -8,6 +8,7 @@ export type MapMarker = {
   longitude: number;
   color: string;
   label: string;
+  ringColor?: string;
 };
 
 type Props = {
@@ -38,6 +39,10 @@ function buildHtml(latitude: number, longitude: number, markers: MapMarker[]) {
       width: 16px; height: 16px; border-radius: 8px; border: 2px solid #fff;
       box-shadow: 0 1px 4px rgba(0,0,0,0.4);
     }
+    .crew-pin-ring {
+      width: 24px; height: 24px; border-radius: 12px; border: 3px solid transparent;
+      display: flex; align-items: center; justify-content: center;
+    }
     .crew-me {
       width: 18px; height: 18px; border-radius: 9px; background: #1a73e8;
       border: 3px solid #fff; box-shadow: 0 0 0 4px rgba(26,115,232,0.3);
@@ -67,11 +72,19 @@ function buildHtml(latitude: number, longitude: number, markers: MapMarker[]) {
 
       var markers = ${markersJson};
       markers.forEach(function (m) {
-        var el = document.createElement('div');
-        el.className = 'crew-pin';
-        el.style.background = m.color;
-        el.addEventListener('click', function () { post({ type: 'marker-press', id: m.id }); });
-        new tt.Marker({ element: el }).setLngLat([m.longitude, m.latitude]).addTo(map);
+        var pin = document.createElement('div');
+        pin.className = 'crew-pin';
+        pin.style.background = m.color;
+
+        var wrapper = pin;
+        if (m.ringColor) {
+          wrapper = document.createElement('div');
+          wrapper.className = 'crew-pin-ring';
+          wrapper.style.borderColor = m.ringColor;
+          wrapper.appendChild(pin);
+        }
+        wrapper.addEventListener('click', function () { post({ type: 'marker-press', id: m.id }); });
+        new tt.Marker({ element: wrapper }).setLngLat([m.longitude, m.latitude]).addTo(map);
       });
 
       map.on('load', function () { post({ type: 'ready' }); });

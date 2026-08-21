@@ -24,6 +24,8 @@ export type Profile = {
   is_collab_mode: boolean;
   is_admin: boolean;
   expo_push_token: string | null;
+  instagram_handle: string | null;
+  tiktok_handle: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -35,6 +37,7 @@ export type ProfessionalProfile = {
   primary_category_id: string | null;
   secondary_category_ids: string[];
   response_time_minutes: number | null;
+  is_available: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -56,6 +59,7 @@ export type CreatorProfile = {
   profile_id: string;
   interests: string[];
   preferred_content_types: string[];
+  is_available: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -195,6 +199,10 @@ export type PortfolioItem = {
   media_type: MediaType;
   title: string | null;
   created_at: string;
+};
+
+export type PortfolioItemWithJoins = PortfolioItem & {
+  professional_profiles: (ProfessionalProfile & { profiles: Profile | null }) | null;
 };
 
 export type UserBlock = {

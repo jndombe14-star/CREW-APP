@@ -3,6 +3,7 @@ import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { Avatar } from '@/components/Avatar';
+import { AvailabilityDot } from '@/components/AvailabilityDot';
 import { Badge } from '@/components/Badge';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
@@ -22,6 +23,7 @@ type NearbyItem = (ProfessionalProfileWithJoins | CreatorProfileWithJoins) & {
   headline?: string;
   latitude?: number | null;
   longitude?: number | null;
+  hasUpcomingBooking?: boolean;
 };
 
 // Real live map (TomTom, via WebView on native / iframe on web) plus the existing
@@ -113,13 +115,17 @@ export default function Map() {
 
   const isLoading = segment === 'pro' ? nearbyProfessionals.isLoading : nearbyCreators.isLoading;
   const data: NearbyItem[] | undefined = segment === 'pro' ? nearbyProfessionals.data : nearbyCreators.data;
+  // Pin color reflects live availability (green = disponible, orange = indisponible), not
+  // PRO/COLLAB category — that's what actually matters when deciding who to contact for a
+  // shoot right now. A yellow ring means they already have an upcoming confirmed booking.
   const markers: MapMarker[] = (data ?? [])
     .filter((item) => item.latitude != null && item.longitude != null)
     .map((item) => ({
       id: item.profile_id,
       latitude: item.latitude as number,
       longitude: item.longitude as number,
-      color: segment === 'pro' ? colors.pro : colors.collab,
+      color: item.is_available ? '#2A9D6F' : '#E8963B',
+      ringColor: item.hasUpcomingBooking ? '#FFC629' : undefined,
       label: item.profiles?.full_name ?? '',
     }));
 
@@ -172,7 +178,12 @@ export default function Map() {
               }
             >
               <Card style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'center' }}>
-                <Avatar name={item.profiles?.full_name ?? '?'} uri={item.profiles?.avatar_url} />
+                <View>
+                  <Avatar name={item.profiles?.full_name ?? '?'} uri={item.profiles?.avatar_url} />
+                  <View style={{ position: 'absolute', bottom: -2, right: -2 }}>
+                    <AvailabilityDot isAvailable={item.is_available} hasUpcomingBooking={item.hasUpcomingBooking} />
+                  </View>
+                </View>
                 <View style={{ flex: 1, gap: 2 }}>
                   <Text style={[typography.subtitle, { color: colors.text }]}>{item.profiles?.full_name}</Text>
                   {segment === 'pro' && 'headline' in item ? (

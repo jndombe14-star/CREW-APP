@@ -27,6 +27,10 @@ export default function TabsLayout() {
         options={{ title: 'Explorer', tabBarIcon: ({ focused }) => <TabIcon emoji="🔥" focused={focused} /> }}
       />
       <Tabs.Screen
+        name="feed"
+        options={{ title: 'Feed', tabBarIcon: ({ focused }) => <TabIcon emoji="🎬" focused={focused} /> }}
+      />
+      <Tabs.Screen
         name="map"
         options={{ title: 'Carte', tabBarIcon: ({ focused }) => <TabIcon emoji="🗺️" focused={focused} /> }}
       />

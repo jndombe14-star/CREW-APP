@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { ActivityIndicator, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Avatar } from '@/components/Avatar';
+import { AvailabilityDot } from '@/components/AvailabilityDot';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { FavoriteButton } from '@/components/FavoriteButton';
 import { ReportBlockActions } from '@/components/ReportBlockActions';
 import { Screen } from '@/components/Screen';
+import { SocialLinks } from '@/components/SocialLinks';
 import { useCollabProfileDetail } from '@/features/profile-detail/useCollabProfileDetail';
 import { useStartConversation } from '@/features/messaging/useStartConversation';
 import { useAuthStore } from '@/store/authStore';
@@ -52,7 +54,12 @@ export default function CollabProfileDetail() {
   return (
     <Screen scroll>
       <View style={{ alignItems: 'center', gap: spacing.sm }}>
-        <Avatar name={creatorProfile.profiles?.full_name ?? '?'} uri={creatorProfile.profiles?.avatar_url} size={88} />
+        <View>
+          <Avatar name={creatorProfile.profiles?.full_name ?? '?'} uri={creatorProfile.profiles?.avatar_url} size={88} />
+          <View style={{ position: 'absolute', bottom: 2, right: 2 }}>
+            <AvailabilityDot isAvailable={creatorProfile.is_available} size={16} />
+          </View>
+        </View>
         <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}>
           <Text style={[typography.title, { color: colors.text }]}>{creatorProfile.profiles?.full_name}</Text>
           {myId !== creatorProfile.profile_id ? <FavoriteButton profileId={creatorProfile.profile_id} /> : null}
@@ -61,7 +68,14 @@ export default function CollabProfileDetail() {
         {creatorProfile.profiles?.city ? (
           <Text style={[typography.caption, { color: colors.textMuted }]}>📍 {creatorProfile.profiles.city}</Text>
         ) : null}
-        <Badge label="COLLAB" tone="collab" />
+        <SocialLinks
+          instagramHandle={creatorProfile.profiles?.instagram_handle}
+          tiktokHandle={creatorProfile.profiles?.tiktok_handle}
+        />
+        <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+          <Badge label="COLLAB" tone="collab" />
+          <Badge label={creatorProfile.is_available ? '🟢 Disponible' : '🟠 Indisponible'} tone="neutral" />
+        </View>
       </View>
 
       {creatorProfile.profiles?.bio ? (

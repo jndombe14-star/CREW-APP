@@ -3,7 +3,7 @@ import { supabase } from '@/lib/supabase';
 import type { CreatorProfileWithJoins, ProfessionalProfileWithJoins } from '@/lib/database.types';
 
 type Coords = { latitude: number; longitude: number } | null;
-type GeoRow = { distance_km: number; latitude: number; longitude: number };
+type GeoRow = { distance_km: number; latitude: number; longitude: number; has_upcoming_booking: boolean };
 
 export function useNearbyProfessionals(coords: Coords, radiusKm = 50, categoryId?: string | null) {
   return useQuery({
@@ -30,7 +30,13 @@ export function useNearbyProfessionals(coords: Coords, radiusKm = 50, categoryId
       return detailsList
         .map((item) => {
           const row = rowById.get(item.id);
-          return { ...item, distanceKm: row?.distance_km ?? null, latitude: row?.latitude ?? null, longitude: row?.longitude ?? null };
+          return {
+            ...item,
+            distanceKm: row?.distance_km ?? null,
+            latitude: row?.latitude ?? null,
+            longitude: row?.longitude ?? null,
+            hasUpcomingBooking: row?.has_upcoming_booking ?? false,
+          };
         })
         .sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
     },
@@ -62,7 +68,13 @@ export function useNearbyCreators(coords: Coords, radiusKm = 50, categorySlug?: 
       return detailsList
         .map((item) => {
           const row = rowById.get(item.id);
-          return { ...item, distanceKm: row?.distance_km ?? null, latitude: row?.latitude ?? null, longitude: row?.longitude ?? null };
+          return {
+            ...item,
+            distanceKm: row?.distance_km ?? null,
+            latitude: row?.latitude ?? null,
+            longitude: row?.longitude ?? null,
+            hasUpcomingBooking: row?.has_upcoming_booking ?? false,
+          };
         })
         .sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
     },

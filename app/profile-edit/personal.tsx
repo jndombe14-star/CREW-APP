@@ -11,6 +11,14 @@ import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { useTheme } from '@/theme/useTheme';
 
+// Accepts "@handle", a bare "handle", or a pasted profile URL and stores just the handle.
+function normalizeHandle(value: string): string | null {
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  const afterSlash = trimmed.includes('/') ? trimmed.split('/').filter(Boolean).pop() ?? trimmed : trimmed;
+  return afterSlash.replace(/^@/, '');
+}
+
 export default function EditPersonalInfo() {
   const { colors, spacing, typography } = useTheme();
   const router = useRouter();
@@ -20,6 +28,8 @@ export default function EditPersonalInfo() {
   const [username, setUsername] = useState(profile?.username ?? '');
   const [city, setCity] = useState(profile?.city ?? '');
   const [bio, setBio] = useState(profile?.bio ?? '');
+  const [instagramHandle, setInstagramHandle] = useState(profile?.instagram_handle ?? '');
+  const [tiktokHandle, setTiktokHandle] = useState(profile?.tiktok_handle ?? '');
   const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url ?? null);
   const [coords, setCoords] = useState<{ latitude: number; longitude: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +86,8 @@ export default function EditPersonalInfo() {
         username: username.trim().toLowerCase(),
         city: city.trim() || null,
         bio: bio.trim() || null,
+        instagram_handle: normalizeHandle(instagramHandle),
+        tiktok_handle: normalizeHandle(tiktokHandle),
         ...(coords ? { location: toGeographyPoint(coords.latitude, coords.longitude) } : {}),
       })
       .eq('id', profile.id);
@@ -109,6 +121,20 @@ export default function EditPersonalInfo() {
       <Input label="Nom d'utilisateur" autoCapitalize="none" value={username} onChangeText={setUsername} />
       <Input label="Ville" value={city} onChangeText={setCity} />
       <Input label="Bio" value={bio} onChangeText={setBio} multiline numberOfLines={4} />
+      <Input
+        label="Instagram"
+        placeholder="@tonpseudo"
+        autoCapitalize="none"
+        value={instagramHandle}
+        onChangeText={setInstagramHandle}
+      />
+      <Input
+        label="TikTok"
+        placeholder="@tonpseudo"
+        autoCapitalize="none"
+        value={tiktokHandle}
+        onChangeText={setTiktokHandle}
+      />
 
       <Button
         label={coords ? '📍 Position mise à jour' : '📍 Utiliser ma position actuelle'}

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, ScrollView, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Avatar } from '@/components/Avatar';
+import { AvailabilityDot } from '@/components/AvailabilityDot';
 import { Badge } from '@/components/Badge';
 import { Card } from '@/components/Card';
 import { EmptyState } from '@/components/EmptyState';
@@ -20,8 +21,8 @@ type Segment = 'pro' | 'collab';
 type CollabView = 'people' | 'projects';
 type SortMode = 'recent' | 'relevance';
 type Coords = { latitude: number; longitude: number } | null;
-type ProItem = ProfessionalProfileWithJoins & { distanceKm?: number | null };
-type CollabItem = CreatorProfileWithJoins & { distanceKm?: number | null };
+type ProItem = ProfessionalProfileWithJoins & { distanceKm?: number | null; hasUpcomingBooking?: boolean };
+type CollabItem = CreatorProfileWithJoins & { distanceKm?: number | null; hasUpcomingBooking?: boolean };
 
 // Spec §20's weighted-score idea, scaled down to the real signals we actually have
 // (no captured search intent yet, so no skills/budget terms to weigh — see README).
@@ -201,6 +202,23 @@ export default function Explore() {
         {locationError ? (
           <Text style={[typography.caption, { color: colors.danger }]}>{locationError}</Text>
         ) : null}
+
+        {!(segment === 'collab' && collabView === 'projects') ? (
+          <View style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'center' }}>
+            <View style={{ flexDirection: 'row', gap: spacing.xs, alignItems: 'center' }}>
+              <AvailabilityDot isAvailable size={10} />
+              <Text style={[typography.caption, { color: colors.textMuted }]}>Disponible</Text>
+            </View>
+            <View style={{ flexDirection: 'row', gap: spacing.xs, alignItems: 'center' }}>
+              <AvailabilityDot isAvailable={false} size={10} />
+              <Text style={[typography.caption, { color: colors.textMuted }]}>Indisponible</Text>
+            </View>
+            <View style={{ flexDirection: 'row', gap: spacing.xs, alignItems: 'center' }}>
+              <AvailabilityDot isAvailable hasUpcomingBooking size={10} />
+              <Text style={[typography.caption, { color: colors.textMuted }]}>A un rdv</Text>
+            </View>
+          </View>
+        ) : null}
       </View>
 
       {isLoading ? (
@@ -226,7 +244,12 @@ export default function Explore() {
             return (
               <Pressable onPress={() => router.push(`/pro/${item.profile_id}`)}>
                 <Card style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'center' }}>
-                  <Avatar name={item.profiles?.full_name ?? '?'} uri={item.profiles?.avatar_url} />
+                  <View>
+                    <Avatar name={item.profiles?.full_name ?? '?'} uri={item.profiles?.avatar_url} />
+                    <View style={{ position: 'absolute', bottom: -2, right: -2 }}>
+                      <AvailabilityDot isAvailable={item.is_available} hasUpcomingBooking={item.hasUpcomingBooking} />
+                    </View>
+                  </View>
                   <View style={{ flex: 1, gap: 2 }}>
                     <Text style={[typography.subtitle, { color: colors.text }]}>{item.profiles?.full_name}</Text>
                     <Text style={[typography.body, { color: colors.textMuted }]}>{item.headline}</Text>
@@ -289,7 +312,12 @@ export default function Explore() {
           renderItem={({ item }) => (
             <Pressable onPress={() => router.push(`/collab/${item.profile_id}`)}>
               <Card style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'center' }}>
-                <Avatar name={item.profiles?.full_name ?? '?'} uri={item.profiles?.avatar_url} />
+                <View>
+                  <Avatar name={item.profiles?.full_name ?? '?'} uri={item.profiles?.avatar_url} />
+                  <View style={{ position: 'absolute', bottom: -2, right: -2 }}>
+                    <AvailabilityDot isAvailable={item.is_available} hasUpcomingBooking={item.hasUpcomingBooking} />
+                  </View>
+                </View>
                 <View style={{ flex: 1, gap: spacing.xs }}>
                   <Text style={[typography.subtitle, { color: colors.text }]}>{item.profiles?.full_name}</Text>
                   {item.distanceKm != null ? (

@@ -33,34 +33,25 @@ export default function Register() {
     }
 
     setLoading(true);
-    const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
+    // full_name/username travel as signup metadata and are picked up by a database
+    // trigger (handle_new_user) that creates the `profiles` row atomically with the
+    // auth.users row itself — a separate client-side insert here could be interrupted
+    // (crash, dropped connection) between the two, leaving an unusable orphaned account.
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: fullName, username: username.trim().toLowerCase() } },
+    });
+
+    setLoading(false);
 
     if (signUpError) {
-      setLoading(false);
       setError(signUpError.message);
       return;
     }
 
     if (!data.session || !data.user) {
-      setLoading(false);
       setInfo('Compte créé. Vérifie ton email pour confirmer ton adresse, puis connecte-toi.');
-      return;
-    }
-
-    const { error: profileError } = await supabase.from('profiles').insert({
-      id: data.user.id,
-      full_name: fullName,
-      username: username.trim().toLowerCase(),
-    });
-
-    setLoading(false);
-
-    if (profileError) {
-      setError(
-        profileError.message.includes('duplicate')
-          ? "Ce nom d'utilisateur est déjà pris."
-          : profileError.message
-      );
       return;
     }
 

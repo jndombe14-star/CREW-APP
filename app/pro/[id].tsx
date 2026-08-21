@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Avatar } from '@/components/Avatar';
+import { AvailabilityDot } from '@/components/AvailabilityDot';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -12,6 +13,7 @@ import { LocationField, type LocationValue } from '@/components/LocationField';
 import { PortfolioThumbnail } from '@/components/PortfolioThumbnail';
 import { ReportBlockActions } from '@/components/ReportBlockActions';
 import { Screen } from '@/components/Screen';
+import { SocialLinks } from '@/components/SocialLinks';
 import { useAvailabilityBlocks, useWeeklyAvailability } from '@/features/availability/useAvailability';
 import { useCreateBooking } from '@/features/bookings/useCreateBooking';
 import { usePortfolioItems } from '@/features/portfolio/usePortfolioItems';
@@ -113,7 +115,12 @@ export default function ProProfileDetail() {
   return (
     <Screen scroll>
       <View style={{ alignItems: 'center', gap: spacing.sm }}>
-        <Avatar name={proProfile.profiles?.full_name ?? '?'} uri={proProfile.profiles?.avatar_url} size={88} />
+        <View>
+          <Avatar name={proProfile.profiles?.full_name ?? '?'} uri={proProfile.profiles?.avatar_url} size={88} />
+          <View style={{ position: 'absolute', bottom: 2, right: 2 }}>
+            <AvailabilityDot isAvailable={proProfile.is_available} size={16} />
+          </View>
+        </View>
         <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}>
           <Text style={[typography.title, { color: colors.text }]}>{proProfile.profiles?.full_name}</Text>
           {myId !== proProfile.profile_id ? <FavoriteButton profileId={proProfile.profile_id} /> : null}
@@ -122,8 +129,13 @@ export default function ProProfileDetail() {
         {proProfile.profiles?.city ? (
           <Text style={[typography.caption, { color: colors.textMuted }]}>📍 {proProfile.profiles.city}</Text>
         ) : null}
+        <SocialLinks
+          instagramHandle={proProfile.profiles?.instagram_handle}
+          tiktokHandle={proProfile.profiles?.tiktok_handle}
+        />
         <View style={{ flexDirection: 'row', gap: spacing.xs }}>
           <Badge label="PRO" tone="pro" />
+          <Badge label={proProfile.is_available ? '🟢 Disponible' : '🟠 Indisponible'} tone="neutral" />
           {rating ? <Badge label={`⭐ ${rating.avg_rating} (${rating.review_count})`} tone="neutral" /> : null}
         </View>
       </View>

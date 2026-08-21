@@ -1,5 +1,6 @@
 import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/Badge';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -7,16 +8,67 @@ import { Screen } from '@/components/Screen';
 import { useOwnCreatorProfile } from '@/features/home/useOwnCreatorProfile';
 import { useOwnProProfile } from '@/features/home/useOwnProProfile';
 import { useUnreadNotificationCount } from '@/features/notifications/useNotifications';
+import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { useTheme } from '@/theme/useTheme';
+
+function AvailabilityToggle({
+  isAvailable,
+  onToggle,
+}: {
+  isAvailable: boolean;
+  onToggle: () => void;
+}) {
+  const { colors, spacing, radius, typography } = useTheme();
+  return (
+    <Pressable onPress={onToggle}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.xs,
+          paddingVertical: spacing.xs,
+          paddingHorizontal: spacing.sm,
+          borderRadius: radius.full,
+          backgroundColor: isAvailable ? '#E3F3EC' : colors.surfaceAlt,
+        }}
+      >
+        <View
+          style={{
+            width: 10,
+            height: 10,
+            borderRadius: 5,
+            backgroundColor: isAvailable ? '#2A9D6F' : '#E8963B',
+          }}
+        />
+        <Text style={[typography.caption, { color: isAvailable ? '#2A9D6F' : colors.textMuted, fontWeight: '600' }]}>
+          {isAvailable ? 'Disponible maintenant' : 'Indisponible'}
+        </Text>
+      </View>
+    </Pressable>
+  );
+}
 
 export default function Home() {
   const { colors, spacing, radius, typography } = useTheme();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const profile = useAuthStore((s) => s.profile);
   const { data: proProfile } = useOwnProProfile();
   const { data: creatorProfile } = useOwnCreatorProfile();
   const unreadCount = useUnreadNotificationCount();
+
+  const toggleProAvailability = async () => {
+    if (!proProfile) return;
+    await supabase.from('professional_profiles').update({ is_available: !proProfile.is_available }).eq('id', proProfile.id);
+    queryClient.invalidateQueries({ queryKey: ['own-pro-profile'] });
+  };
+
+  const toggleCreatorAvailability = async () => {
+    if (!creatorProfile) return;
+    await supabase.from('creator_profiles').update({ is_available: !creatorProfile.is_available }).eq('id', creatorProfile.id);
+    queryClient.invalidateQueries({ queryKey: ['own-creator-profile'] });
+  };
 
   return (
     <Screen scroll>
@@ -76,6 +128,7 @@ export default function Home() {
           </View>
           {proProfile ? (
             <>
+              <AvailabilityToggle isAvailable={proProfile.is_available} onToggle={toggleProAvailability} />
               <Text style={[typography.body, { color: colors.text }]}>{proProfile.headline}</Text>
               <Text style={[typography.caption, { color: colors.textMuted }]}>
                 {proProfile.services?.length ?? 0} service{(proProfile.services?.length ?? 0) === 1 ? '' : 's'} publié
@@ -96,6 +149,9 @@ export default function Home() {
             <Text style={[typography.subtitle, { color: colors.text }]}>Espace Collab</Text>
             <Badge label="COLLAB" tone="collab" />
           </View>
+          {creatorProfile ? (
+            <AvailabilityToggle isAvailable={creatorProfile.is_available} onToggle={toggleCreatorAvailability} />
+          ) : null}
           {creatorProfile && creatorProfile.interests.length > 0 ? (
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
               {creatorProfile.interests.map((interest) => (
